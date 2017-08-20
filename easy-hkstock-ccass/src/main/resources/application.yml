@@ -1,0 +1,4 @@
+snapshot:
+    request:
+        stocks:
+            - '01357'

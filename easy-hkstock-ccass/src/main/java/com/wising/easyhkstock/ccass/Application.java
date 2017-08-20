@@ -7,9 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Import;
 
-import com.wising.easyhkstock.ccass.config.SnapshotMongoConfiguration;
+import com.wising.easyhkstock.ccass.config.ApplicationProperties;
+import com.wising.easyhkstock.ccass.config.MongoConfiguration;
 import com.wising.easyhkstock.ccass.domain.SnapshotDetail;
 import com.wising.easyhkstock.ccass.domain.SnapshotSummary;
 import com.wising.easyhkstock.ccass.domain.repository.SnapshotDetailRepository;
@@ -19,7 +21,8 @@ import com.wising.easyhkstock.ccass.task.SnapshotDataBuilder;
 import com.wising.easyhkstock.common.task.DataTask;
 
 @EnableAutoConfiguration
-@Import(value=SnapshotMongoConfiguration.class)
+@Import(value=MongoConfiguration.class)
+@EnableConfigurationProperties(ApplicationProperties.class)
 public class Application implements CommandLineRunner {
 
 	@Autowired
