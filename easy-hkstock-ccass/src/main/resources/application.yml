@@ -1,3 +1,5 @@
+mongo:
+    databaseName: 'snapshot'
 snapshot:
     request:
         stocks:

@@ -7,28 +7,30 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
+import com.wising.easyhkstock.common.config.DefaultMongoConfiguration;
 import com.wising.easyhkstock.common.domain.Participant;
 import com.wising.easyhkstock.common.domain.Stock;
 import com.wising.easyhkstock.common.task.DataTask;
 import com.wising.easyhkstock.common.task.MongoDispatcher;
-import com.wising.easyhkstock.ref.config.ReferenceMongoConfiguration;
+import com.wising.easyhkstock.ref.config.ApplicationConfiguration;
 import com.wising.easyhkstock.ref.task.ParticipantHelper;
 import com.wising.easyhkstock.ref.task.ReferenceDataBuilder;
-import com.wising.easyhkstock.ref.task.ReferenceDataHelper;
+import com.wising.easyhkstock.ref.task.BuilderHelper;
 import com.wising.easyhkstock.ref.task.StockHelper;
 
 //@SpringBootApplication
 //@Configuration
 @EnableAutoConfiguration
-@Import(value=ReferenceMongoConfiguration.class)
+@Import(value=ApplicationConfiguration.class)
 public class Application implements CommandLineRunner {
 
 	@Autowired
 	private MongoRepository<Stock, String> stockRepository;
 	@Autowired
 	private MongoRepository<Participant, String> participantRepository;
+	@Autowired
+	private ApplicationConfiguration configuration;
 	
 	public static void main(String[] args) {
 
@@ -39,14 +41,14 @@ public class Application implements CommandLineRunner {
 	public void run(String... args) throws Exception {
 		
 //		test();
-		ReferenceDataHelper<Stock> stockHelper = new StockHelper();
-		ReferenceDataBuilder<Stock> stockBuilder = new ReferenceDataBuilder<Stock>(stockHelper);
+		BuilderHelper<Stock> stockHelper = new StockHelper();
+		ReferenceDataBuilder<Stock> stockBuilder = new ReferenceDataBuilder<Stock>(configuration.getStock(), stockHelper);
 		DataTask<Stock> stockTask = new DataTask<Stock>(stockBuilder);
 		stockTask.addDispatcher(new MongoDispatcher<Stock, String>(stockRepository));
 		stockTask.run();
 		
-		ReferenceDataHelper<Participant> participantHelper = new ParticipantHelper();
-		ReferenceDataBuilder<Participant> participantBuilder = new ReferenceDataBuilder<Participant>(participantHelper);
+		BuilderHelper<Participant> participantHelper = new ParticipantHelper();
+		ReferenceDataBuilder<Participant> participantBuilder = new ReferenceDataBuilder<Participant>(configuration.getStock(), participantHelper);
 		DataTask<Participant> participantTask = new DataTask<Participant>(participantBuilder);
 		participantTask.addDispatcher(new MongoDispatcher<Participant, String>(participantRepository));
 		participantTask.run();

@@ -34,11 +34,11 @@ public class TestReferenceDataTask {
 	    };
 	    Authenticator.setDefault(authenticator);
 
-	    List<Stock> stocks = new ReferenceDataBuilder<Stock>(new StockHelper()).build();
-    	stocks.forEach(stock -> logger.info(stock.toString()));
-    	
-	    List<Participant> participants = new ReferenceDataBuilder<Participant>(new ParticipantHelper()).build();
-	    participants.forEach(participant -> logger.info(participant.toString()));
+//	    List<Stock> stocks = new ReferenceDataBuilder<Stock>(new StockHelper()).build();
+//    	stocks.forEach(stock -> logger.info(stock.toString()));
+//    	
+//	    List<Participant> participants = new ReferenceDataBuilder<Participant>(new ParticipantHelper()).build();
+//	    participants.forEach(participant -> logger.info(participant.toString()));
     	
     }
 }

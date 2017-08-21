@@ -34,9 +34,9 @@ public class TestSnapshotTask {
 	        }
 	    };
 	    Authenticator.setDefault(authenticator);
-	    SimpleImmutableEntry<SnapshotSummary, SnapshotDetail> result = new SnapshotTask().run();
-	    logger.info(result.getKey().toString());
-	    logger.info(result.getValue().toString());
+//	    SimpleImmutableEntry<SnapshotSummary, SnapshotDetail> result = new SnapshotTask().run();
+//	    logger.info(result.getKey().toString());
+//	    logger.info(result.getValue().toString());
     	
     }
 }

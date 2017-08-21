@@ -2,6 +2,7 @@ package com.wising.easyhkstock.common.task;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.commons.lang3.Validate;
 
@@ -12,7 +13,7 @@ public class DataTask<T> implements Runnable{
 	private List<DataDispatcher<T>> dispatchers = new ArrayList<DataDispatcher<T>>();
 	
 	public DataTask(DataBuilder<T> builder) {
-		Validate.notNull(builder);
+		Objects.requireNonNull(builder);
 		this.builder = builder;
 	}
 	
@@ -29,12 +30,12 @@ public class DataTask<T> implements Runnable{
 	}
 	
 	public void addDispatcher(DataDispatcher<T> dispatcher) {
-		Validate.notNull(dispatcher);
+		Objects.requireNonNull(dispatcher);
 		this.dispatchers.add(dispatcher);
 	}
 	
 	public void removeDispatcher(DataDispatcher<T> dispatcher) {
-		Validate.notNull(dispatcher);
+		Objects.requireNonNull(dispatcher);
 		this.dispatchers.remove(dispatcher);
 	}
 }
