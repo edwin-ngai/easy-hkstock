@@ -30,13 +30,6 @@ repositories {
 //	maven {
 //        url 'https://repo.spring.io/libs-release'
 //    }
-//	maven {
-//		url 'https://dsnexus.uk.hibm.hsbc:8081/nexus/content/groups/dev/'
-//		credentials {
-//			username '44016417'
-//			password '!234Hsbc'
-//		}
-//	}
 }
 
 dependencies {
