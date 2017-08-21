@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.commons.lang3.Validate;
-
 //This class is not thread safe
 public class DataTask<T> implements Runnable{
 

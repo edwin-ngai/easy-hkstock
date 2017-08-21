@@ -22,18 +22,6 @@ public class TestSnapshotTask {
 
     @Test
     public void testRun() {
-		Properties properties = System.getProperties();
-		properties.put("http.proxyHost", "intpxy1.hk.hsbc");
-		properties.put("http.proxyPort", "8080");
-		
-		Authenticator authenticator = new Authenticator() {
-
-	        public PasswordAuthentication getPasswordAuthentication() {
-	            return (new PasswordAuthentication("44016417",
-	                    "!234Hsbc".toCharArray()));
-	        }
-	    };
-	    Authenticator.setDefault(authenticator);
 //	    SimpleImmutableEntry<SnapshotSummary, SnapshotDetail> result = new SnapshotTask().run();
 //	    logger.info(result.getKey().toString());
 //	    logger.info(result.getValue().toString());

@@ -2,15 +2,15 @@ mongo:
     databaseName: 'reference'
 reference:
     stock:
-        enUrl: 'http://www.hkexnews.hk/sdw/search/stocklist.aspx?SortBy=StockCode'
-        scUrl: 'http://sc.hkexnews.hk/TuniS/www.hkexnews.hk/sdw/search/stocklist_c.aspx?SortBy=StockCode'
-        tcUrl: 'http://www.hkexnews.hk/sdw/search/stocklist_c.aspx?SortBy=StockCode'
+        enUriBase: 'http://www.hkexnews.hk/sdw/search/stocklist.aspx?SortBy=StockCode'
+        scUriBase: 'http://sc.hkexnews.hk/TuniS/www.hkexnews.hk/sdw/search/stocklist_c.aspx?SortBy=StockCode'
+        tcUriBase: 'http://www.hkexnews.hk/sdw/search/stocklist_c.aspx?SortBy=StockCode'
         pageName: 'Stock List'
         tableSelector: '#form1 > table > tbody'
     participant:
-        enUrl: 'http://www.hkexnews.hk/sdw/search/partlist.aspx?SortBy=PartID'
-        scUrl: 'http://sc.hkexnews.hk/TuniS/www.hkexnews.hk/sdw/search/partlist_c.aspx?SortBy=PartID'
-        tcUrl: 'http://www.hkexnews.hk/sdw/search/partlist_c.aspx?SortBy=PartID'
+        enUriBase: 'http://www.hkexnews.hk/sdw/search/partlist.aspx?SortBy=PartID'
+        scUriBase: 'http://sc.hkexnews.hk/TuniS/www.hkexnews.hk/sdw/search/partlist_c.aspx?SortBy=PartID'
+        tcUriBase: 'http://www.hkexnews.hk/sdw/search/partlist_c.aspx?SortBy=PartID'
         pageName: 'Participant List'
         tableSelector: '#form1 > table > tbody'
                 

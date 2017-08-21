@@ -17,7 +17,6 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import com.wising.easyhkstock.common.task.DataBuilder;
-import com.wising.easyhkstock.ref.config.BuilderConfiguration;
 
 public class ReferenceDataBuilder<T> implements DataBuilder<T>{
 

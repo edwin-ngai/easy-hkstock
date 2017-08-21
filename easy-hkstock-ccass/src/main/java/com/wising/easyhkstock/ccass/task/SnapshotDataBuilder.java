@@ -7,16 +7,22 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import com.wising.easyhkstock.ccass.domain.SnapshotDetail;
@@ -27,25 +33,37 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 
 	private static final Logger logger = LoggerFactory.getLogger(SnapshotDataBuilder.class);
 
-	private ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-	private RestTemplate restTpl = new RestTemplate();
-	private SnapshotDataHelper helper = new SnapshotDataHelper();
+	private RestTemplate restTpl;
+	private ThreadPoolTaskExecutor executor;
+	private BuilderConfiguration configuration;
 
-	public SnapshotDataBuilder() {
-		executor.setCorePoolSize(20);
-		executor.setQueueCapacity(20);
-		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-		executor.initialize();
-		restTpl.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+	public SnapshotDataBuilder(BuilderConfiguration configuration) {
+		Objects.requireNonNull(configuration);
+		this.configuration = configuration;
+		initExecutor();
+		initRestTemplate();
 	}
 
+	private void initExecutor() {
+		executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(configuration.getCorePoolSize());
+		executor.setQueueCapacity(configuration.getQueueCapacity());
+		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		executor.initialize();
+	}
+	
+	private void initRestTemplate() {
+		restTpl = new RestTemplate();
+		restTpl.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+	}
+	
 	@Override
 	public List<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> build() {
 
 		List<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> result = new ArrayList<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>();
-		LocalDate startDate = helper.getStartDate();
+		LocalDate startDate = configuration.getStartDate();
 		LocalDate today = LocalDate.now();
-		List<String> stockList = helper.getStockList();
+		List<String> stockList = configuration.getStocks();
 		while (startDate.isBefore(today)) {
 			final LocalDate date = startDate;
 			List<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> subResult = new ArrayList<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>();
@@ -87,8 +105,8 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 			month = "0"+month;
 		}
 		String day = String.valueOf(date.getDayOfMonth());
-		ResponseEntity<String> response = restTpl.postForEntity(helper.getURI(),
-				helper.getHttpEntity(year, month, day, stockCode), String.class);
+		ResponseEntity<String> response = restTpl.postForEntity(configuration.getUri(),
+				getHttpEntity(year, month, day, stockCode), String.class);
 		if (response != null && HttpStatus.OK.equals(response.getStatusCode())) {
 			String html = response.getBody();
 			SnapshotPage page = new SnapshotPage(html);
@@ -111,6 +129,21 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 
 		return result;
 
+	}
+	
+	private HttpEntity<MultiValueMap<String, String>> getHttpEntity(String year, String month, String day, String stockCode) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+		MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
+		body.add("__VIEWSTATE", configuration.getViewState());
+		body.add("__EVENTVALIDATION", configuration.getEventValidation());
+		body.add("btnSearch.x", String.valueOf(configuration.getSearchX()));
+		body.add("btnSearch.y", String.valueOf(configuration.getSearchY()));
+		body.add("ddlShareholdingDay", day);
+		body.add("ddlShareholdingMonth", month);
+		body.add("ddlShareholdingYear", year);
+		body.add("txtStockCode", stockCode);
+		return new HttpEntity<MultiValueMap<String, String>>(body, headers);
 	}
 
 }

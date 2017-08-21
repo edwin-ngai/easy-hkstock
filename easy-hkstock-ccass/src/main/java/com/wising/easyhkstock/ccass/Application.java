@@ -10,25 +10,27 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Import;
 
-import com.wising.easyhkstock.ccass.config.ApplicationProperties;
+import com.wising.easyhkstock.ccass.config.ApplicationConfiguration;
 import com.wising.easyhkstock.ccass.domain.SnapshotDetail;
 import com.wising.easyhkstock.ccass.domain.SnapshotSummary;
 import com.wising.easyhkstock.ccass.domain.repository.SnapshotDetailRepository;
 import com.wising.easyhkstock.ccass.domain.repository.SnapshotSummaryRepository;
+import com.wising.easyhkstock.ccass.task.BuilderConfiguration;
 import com.wising.easyhkstock.ccass.task.MongoDispatcher;
 import com.wising.easyhkstock.ccass.task.SnapshotDataBuilder;
 import com.wising.easyhkstock.common.config.DefaultMongoConfiguration;
 import com.wising.easyhkstock.common.task.DataTask;
 
 @EnableAutoConfiguration
-@EnableConfigurationProperties({ApplicationProperties.class, DefaultMongoConfiguration.class})
-@Import(value=DefaultMongoConfiguration.class)
+@Import(ApplicationConfiguration.class)
 public class Application implements CommandLineRunner {
 
 	@Autowired
 	private SnapshotDetailRepository detailRepository;
 	@Autowired
 	private SnapshotSummaryRepository summaryRepository;
+	@Autowired
+	private ApplicationConfiguration configuration;
 
 	public static void main(String[] args) {
 
@@ -38,7 +40,7 @@ public class Application implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		
-		SnapshotDataBuilder snapshotBuilder = new SnapshotDataBuilder();
+		SnapshotDataBuilder snapshotBuilder = new SnapshotDataBuilder(configuration.getBuilder());
 		DataTask<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> snapshotTask
 			= new DataTask<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>(snapshotBuilder);
 		snapshotTask.addDispatcher(new MongoDispatcher(summaryRepository, detailRepository));

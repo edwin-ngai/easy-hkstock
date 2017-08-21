@@ -1,8 +1,6 @@
 package com.wising.easyhkstock.common.config;
 
 
-import java.util.Objects;
-
 import org.apache.commons.lang3.Validate;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;

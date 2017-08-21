@@ -6,8 +6,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import com.wising.easyhkstock.common.config.DefaultMongoConfiguration;
+import com.wising.easyhkstock.ref.task.BuilderConfiguration;
+
 @Configuration
-@Import(value=BuilderConfiguration.class)
+@Import(DefaultMongoConfiguration.class)
 @ConfigurationProperties("reference")
 public class ApplicationConfiguration {
 

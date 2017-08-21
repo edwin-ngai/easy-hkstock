@@ -1,6 +1,7 @@
 mongo:
     databaseName: 'snapshot'
 snapshot:
-    request:
-        stocks:
-            - '01357'
+    corePoolSize: 10
+    queueCapacity: 10
+    stocks:
+        - '01357'

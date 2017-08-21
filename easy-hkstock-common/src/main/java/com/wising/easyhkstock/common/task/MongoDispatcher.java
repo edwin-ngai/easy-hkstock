@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.commons.lang3.Validate;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public class MongoDispatcher<T, ID extends Serializable> implements DataDispatcher<T> {

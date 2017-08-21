@@ -1,7 +1,5 @@
 package com.wising.easyhkstock.ref.task;
 
-import java.net.URI;
-
 import com.wising.easyhkstock.common.domain.Stock;
 
 public class StockHelper extends BuilderHelper<Stock> {
