@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.Validate;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 public class BuilderConfiguration {
 
@@ -19,6 +19,7 @@ public class BuilderConfiguration {
 			eventValidation = "TulHaQrwALPwDAbcckpjWdZDj2rLKbe3VjkfCfUk1zXTXmsiLak4ewnQOJWIARc8LitRN6kNZ3Uoj3W1f4m71mit562o6mf7xyP+M5AIDOuDgOsrS8GcIXFvor8RFb5+WznvLlFMte/yQwsyho5MRMJNXtIXHVuVfgELbKhgjH/L0BVt5/ig8ej9MA197oH4RBwuLxDjiREP4L3ov07x7kocd9qJ85Chj6Cjr6XsWTwjrvmi6EUnB4f+XuPNgccXdRTl6OZqsFiKbOA+SdBEgZdoWyPMsBeOTjA8eEfN98QeafyCFkCawhvo2bTeHaizCN7q6h8Txxt3+LK+PCmD95GBBkgJ+HCOAg5y92kmfbKco5HVWpbqOK5WbmgSgTrjR5FwuhICtjEW+/hDLcM0jkMeP2XbcvUmD4KBsshb4uhwzbeoO/ZQuhwJeVDF1l1qc2l1lZKaSsvu6Z1IiwA6vH0s9syZm571RJl771LeJc4xSVWsXTRyWQe6j3l1Csfie2ddtnZVb/UicqsLaxiFn3eA6pGV2fH/J26xiD0GkwSYRPfj8gCpt1PKImpRU/ZbNiJtzRRVM4KGX08ejxYC731pC99TUehegGG829+avdttGSX8Txyo/QIGza5gl2xN1AMKfITpoxWRxLsvocgkztPUcEo8i7zYvmNgGCmBIFMbJ23NTTIzr2zjCCNjNEhAezssW/E/ubuV1WbzdCkHOJXZ7IH39RUT2SR09xIH0Np09eoJCAatB43AM4WJbrd4inU0uHkUbV5mwbp1XPSYpKjNKaqzp4c8418EIN8qyc7ggtUQ2DwljtQ05BGnB8cNvQkjWxwl1uzL8MHW5Pblj5gsbshdcsiwcRx3jE4gVsb2rhoB7gAmZCRrGt07k38sH9pK1LwwEBYV5jSN8/nhowu4rE3/n6tg0CNiZJ0Qk8RsBygvjSo3zhj/UKy83UgMHFAqlBh9JzuE+XkY/L8Q3zUk6kIOKBIHxwDKP7Budqq+qrTjYI5PfH/TfFPXngKviNjsVyqlLx4mT36wLEvImz+WxBPvk84to4ejbmvNjjFhlFu0v/B5xICkyOPpR67MAtax26eTVXCbc5RdgqbkwkZ5incX3tOqhe9M2alDrzszz8Age4CvmVlqrOzRuv2IhO7+qAWQrecISeMQZgdSCU+OUuOTRgBZMmQMcqyYXDE6fjUIL6skKPZi0nMNVGlWjFVL4TfRW6aEE8KPMAj0F8WVuW9Vmlk8Wc1kKThagKaY0Oc1t56eWS1cRgDj2fpRlZnvlw==";
 	private URI uri = URI.create("http://www.hkexnews.hk/sdw/search/searchsdw.aspx");
 	private LocalDate startDate = LocalDate.now().minusDays(1);
+	private LocalDate endDate = LocalDate.now();
 	private List<String> stocks = new ArrayList<String>();
 
 	public int getCorePoolSize() {
@@ -79,6 +80,15 @@ public class BuilderConfiguration {
 	public void setStartDate(LocalDate startDate) {
 		Validate.notNull(startDate);
 		this.startDate = startDate;
+	}
+	
+	public LocalDate getEndDate() {
+		return endDate;
+	}
+
+	public void setEndDate(LocalDate endDate) {
+		Validate.notNull(endDate);
+		this.endDate = endDate;
 	}
 
 	public URI getUri() {

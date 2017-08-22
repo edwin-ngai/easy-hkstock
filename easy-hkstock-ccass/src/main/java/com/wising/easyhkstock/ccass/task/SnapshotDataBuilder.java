@@ -62,9 +62,10 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 
 		List<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> result = new ArrayList<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>();
 		LocalDate startDate = configuration.getStartDate();
-		LocalDate today = LocalDate.now();
+		LocalDate endDate = configuration.getEndDate();
 		List<String> stockList = configuration.getStocks();
-		while (startDate.isBefore(today)) {
+		int totalDays = 0;
+		while (startDate.isBefore(endDate)) {
 			final LocalDate date = startDate;
 			List<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> subResult = new ArrayList<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>();
 			List<FutureTask<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>> tasks 
@@ -81,16 +82,24 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 			});
 			tasks.forEach(task -> {
 				try {
-					subResult.add(task.get());
+					SimpleImmutableEntry<SnapshotSummary, SnapshotDetail> taskResult = task.get();
+					if (taskResult != null) {
+						subResult.add(taskResult);
+					}else {
+						
+					}
 				} catch (Exception e) {
 					logger.error("Unexpected errors encountered.", e);
 					//TODO should send notification or retry
 				}
 			});
 			result.addAll(subResult);
+			logger.debug("Completed data of {}", startDate);
+			totalDays++;
 			startDate = startDate.plusDays(1);
 		}
 
+		logger.debug("Totally processing {} days of data", totalDays);
 		return Collections.unmodifiableList(result);
 
 	}
@@ -105,8 +114,11 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 			month = "0"+month;
 		}
 		String day = String.valueOf(date.getDayOfMonth());
-		ResponseEntity<String> response = restTpl.postForEntity(configuration.getUri(),
-				getHttpEntity(year, month, day, stockCode), String.class);
+		if (day.length()==1) {
+			day = "0"+day;
+		}
+		HttpEntity<MultiValueMap<String, String>> request = getHttpEntity(year, month, day, stockCode);
+		ResponseEntity<String> response = restTpl.postForEntity(configuration.getUri(), request, String.class);
 		if (response != null && HttpStatus.OK.equals(response.getStatusCode())) {
 			String html = response.getBody();
 			SnapshotPage page = new SnapshotPage(html);
@@ -116,15 +128,20 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 				long totalIssuedShares = page.getTotalIssuedShares();
 				long intermediaryShareholding = page.getIntermediaryShareholding();
 				short intermediaryNumber = page.getIntermediaryNumber();
+				long consentingShareholding = page.getConsentingShareholding();
+				short consentingInvestorNumber = page.getConsentingInvestorNumber();
 				long nonConsentingShareholding = page.getNonConsentingShareholding();
 				short nonConsentingInvestorNumber = page.getNonConsentingInvestorNumber();
 				Map<String, Long> details = page.getDetail();
 				SnapshotSummary summary = new SnapshotSummary(stockCodeOfPage, snapshotDate, totalIssuedShares,
-						intermediaryNumber, intermediaryShareholding, nonConsentingInvestorNumber,
+						intermediaryNumber, intermediaryShareholding, consentingInvestorNumber,
+						consentingShareholding, nonConsentingInvestorNumber,
 						nonConsentingShareholding);
 				SnapshotDetail detail = new SnapshotDetail(stockCodeOfPage, snapshotDate, details);
 				result = new SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>(summary, detail);
 			}
+		}else {
+			logger.debug("[{}:{}] got error response: {}. \nOriginal Request is {}", stockCode, date, response, request);
 		}
 
 		return result;

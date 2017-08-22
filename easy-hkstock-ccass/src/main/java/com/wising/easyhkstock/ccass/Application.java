@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 
 import com.wising.easyhkstock.ccass.config.ApplicationConfiguration;
@@ -15,10 +15,8 @@ import com.wising.easyhkstock.ccass.domain.SnapshotDetail;
 import com.wising.easyhkstock.ccass.domain.SnapshotSummary;
 import com.wising.easyhkstock.ccass.domain.repository.SnapshotDetailRepository;
 import com.wising.easyhkstock.ccass.domain.repository.SnapshotSummaryRepository;
-import com.wising.easyhkstock.ccass.task.BuilderConfiguration;
 import com.wising.easyhkstock.ccass.task.MongoDispatcher;
 import com.wising.easyhkstock.ccass.task.SnapshotDataBuilder;
-import com.wising.easyhkstock.common.config.DefaultMongoConfiguration;
 import com.wising.easyhkstock.common.task.DataTask;
 
 @EnableAutoConfiguration
@@ -33,7 +31,7 @@ public class Application implements CommandLineRunner {
 	private ApplicationConfiguration configuration;
 
 	public static void main(String[] args) {
-
+		
 		SpringApplication.run(Application.class, args);
 	}
 	

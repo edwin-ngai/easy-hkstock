@@ -5,7 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.Validate;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.wising.easyhkstock.ccass.domain.SnapshotDetail;
 import com.wising.easyhkstock.ccass.domain.SnapshotSummary;
@@ -13,7 +14,10 @@ import com.wising.easyhkstock.ccass.domain.repository.SnapshotDetailRepository;
 import com.wising.easyhkstock.ccass.domain.repository.SnapshotSummaryRepository;
 import com.wising.easyhkstock.common.task.DataDispatcher;
 
+
 public class MongoDispatcher implements DataDispatcher<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> {
+
+	private static final Logger logger = LoggerFactory.getLogger(MongoDispatcher.class);
 
 	private SnapshotDetailRepository detailRepository;
 	private SnapshotSummaryRepository summaryRepository;
@@ -38,5 +42,6 @@ public class MongoDispatcher implements DataDispatcher<SimpleImmutableEntry<Snap
 		});
 		summaryRepository.save(summary);
 		detailRepository.save(detail);
+		logger.debug("Finished dispatching data to mongo db.");
 	}
 }

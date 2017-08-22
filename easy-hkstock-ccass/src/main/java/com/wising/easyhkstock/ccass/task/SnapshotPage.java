@@ -34,11 +34,13 @@ public class SnapshotPage {
 	private Document doc;
 	private String stockCode;
 	private LocalDate snapshotDate;
-	private long totalIssuedShares = -1;
-	private short intermediaryNumber = -1;
-	private long intermediaryShareholding = -1;
-	private short nonConsentingInvestorNumber = -1;
-	private long nonConsentingShareholding = -1;
+	private long totalIssuedShares = 0;
+	private short intermediaryNumber = 0;
+	private long intermediaryShareholding = 0;
+	private short consentingInvestorNumber = 0;
+	private long consentingShareholding = 0;
+	private short nonConsentingInvestorNumber = 0;
+	private long nonConsentingShareholding = 0;
 	private Map<String, Long> detail = new HashMap<String, Long>();
 	private boolean hasError = false;
 	
@@ -73,6 +75,16 @@ public class SnapshotPage {
 	}
 
 
+	public short getConsentingInvestorNumber() {
+		return consentingInvestorNumber;
+	}
+
+
+	public long getConsentingShareholding() {
+		return consentingShareholding;
+	}
+
+
 	public short getNonConsentingInvestorNumber() {
 		return nonConsentingInvestorNumber;
 	}
@@ -102,7 +114,7 @@ public class SnapshotPage {
 		if (basicInfoTable != null) {
 			List<String> basicInfo = Utils.getElementText(basicInfoTable);
 			if (basicInfo.size() != 11) {
-				logger.error("The basic info table has no necessary items.");
+				logger.error("The basic info table of [{}:{}] has no necessary items: [{}]", stockCode, snapshotDate, basicInfo);
 				hasError = true;
 			}else {
 				stockCode = basicInfo.get(4);
@@ -131,20 +143,43 @@ public class SnapshotPage {
 		Element summaryTable = doc.select(summarySelector).first();
 		if (summaryTable != null) {
 			List<String> summaryItems = Utils.getElementText(summaryTable);
-			if (summaryItems.size() != 18) {
-				logger.error("The summary table has no necessary items");
-				hasError = true;
-			}else {
-				try {
-					intermediaryShareholding = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(5)).longValue();
-					intermediaryNumber = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(6)).shortValue();
-					nonConsentingShareholding = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(9)).longValue();
-					nonConsentingInvestorNumber = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(10)).shortValue();
-					totalIssuedShares = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(17)).longValue();
-				} catch (ParseException e) {
-					logger.error("The summary table has wrong item(s)");
+			int itemSize = summaryItems.size();
+			try {
+				int intermediariesIndex = summaryItems.indexOf("Market Intermediaries");
+				if (intermediariesIndex!=-1 && intermediariesIndex<itemSize-2) {
+					intermediaryShareholding = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(intermediariesIndex+1)).longValue();
+					intermediaryNumber = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(intermediariesIndex+2)).shortValue();
+				}else {
+					logger.error("The summary table of [{}:{}] has no necessary items: [{}]", stockCode, snapshotDate, summaryItems);
 					hasError = true;
 				}
+				
+				int consentingInvestorIndex = summaryItems.indexOf("Consenting Investor Participants");
+				if (consentingInvestorIndex!=-1 && consentingInvestorIndex<itemSize-2) {
+					consentingShareholding = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(consentingInvestorIndex+1)).longValue();
+					consentingInvestorNumber = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(consentingInvestorIndex+2)).shortValue();
+				}
+				
+				int nonConsentingInvestorIndex = summaryItems.indexOf("Non-consenting Investor Participants");
+				if (nonConsentingInvestorIndex!=-1 && nonConsentingInvestorIndex<itemSize-2) {
+					nonConsentingShareholding = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(nonConsentingInvestorIndex+1)).longValue();
+					nonConsentingInvestorNumber = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(nonConsentingInvestorIndex+2)).shortValue();
+				}else {
+					logger.error("The summary table of [{}:{}] has no necessary items: [{}]", stockCode, snapshotDate, summaryItems);
+					hasError = true;
+				}
+				
+				int totalIssuedSharesIndex = summaryItems.indexOf("Total number of Issued Shares/Warrants/Units (last updated figure)");
+				if (totalIssuedSharesIndex!=-1 && totalIssuedSharesIndex<itemSize-1) {
+					totalIssuedShares = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(totalIssuedSharesIndex+1)).longValue();
+				}else {
+					logger.error("The summary table of [{}:{}] has no necessary items: [{}]", stockCode, snapshotDate, summaryItems);
+					hasError = true;
+				}
+
+			} catch (ParseException e) {
+				logger.error("The summary table has wrong item(s)");
+				hasError = true;
 			}
 		}
 	}
@@ -159,11 +194,14 @@ public class SnapshotPage {
 				for (int i = 3; i < detailEtls.size(); i++) {
 					Element detailElt = detailEtls.get(i);
 					List<String> texts = Utils.getElementText(detailElt);
-					if (texts.size() < 5) {
-						logger.error("The detail row has no necessary columns: [{}]", texts);
+					if (texts.size() < 4) {
+						logger.error("The detail row of [{}:{}] has no necessary columns: [{}]", stockCode, snapshotDate, texts);
 						hasError = true;
 					} else {
 						String participant = texts.get(0);
+						if (StringUtils.isBlank(participant)) {
+							participant = texts.get(1);
+						}
 						String shareholding = texts.get(3);
 						if (StringUtils.isEmpty(participant) || StringUtils.isEmpty(shareholding)) {
 							logger.error("Some column(s) is empty: [{},{}]", participant, shareholding);
@@ -180,27 +218,9 @@ public class SnapshotPage {
 				}
 				logger.debug("Get {} rows", detail.size());
 			}else {
-				logger.debug("detail table has no data rows");
+				logger.error("detail table has no data rows");
 				hasError = true;
 			}
 		}
 	}
-	
-//	private List<String> getElementText(Element elt) {
-//		List<String> result = new ArrayList<String>();
-//		new NodeTraversor(new NodeVisitor() {
-//			public void head(Node node, int depth) {
-//				if (node instanceof TextNode) {
-//					TextNode textNode = (TextNode) node;
-//					String text = org.jsoup.helper.StringUtil.normaliseWhitespace(textNode.getWholeText()).trim();
-//					if (!StringUtils.isEmpty(text)) {
-//						result.add(text);
-//					}
-//				}
-//			}
-//			public void tail(Node node, int depth) {
-//			}
-//		}).traverse(elt);
-//		return result;
-//	}
 }
