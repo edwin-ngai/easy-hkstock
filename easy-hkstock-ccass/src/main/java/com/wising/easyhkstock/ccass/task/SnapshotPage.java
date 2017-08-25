@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -35,6 +36,7 @@ public class SnapshotPage {
 	private String stockCode;
 	private LocalDate snapshotDate;
 	private long totalIssuedShares = 0;
+	private long totalIssuedAShares = 0;
 	private short intermediaryNumber = 0;
 	private long intermediaryShareholding = 0;
 	private short consentingInvestorNumber = 0;
@@ -43,13 +45,21 @@ public class SnapshotPage {
 	private long nonConsentingShareholding = 0;
 	private Map<String, Long> detail = new HashMap<String, Long>();
 	private boolean hasError = false;
+	private String identifier;
 	
-	public SnapshotPage(String html) {
+	public SnapshotPage(String html, String stockCode, LocalDate snapshotDate) {
 		
 		Objects.requireNonNull(html);
+		Validate.notBlank(stockCode);
+		Objects.requireNonNull(snapshotDate);
+		this.stockCode = stockCode;
+		this.snapshotDate = snapshotDate;
+		this.identifier = stockCode + ":" + snapshotDate;
 		doc = Jsoup.parse(html);
 		if (doc != null) {
 			init();
+		}else {
+			hasError = true;
 		}
 	}
 	
@@ -64,6 +74,10 @@ public class SnapshotPage {
 
 	public long getTotalIssuedShares() {
 		return totalIssuedShares;
+	}
+
+	public long getTotalIssuedAShares() {
+		return totalIssuedAShares;
 	}
 
 	public short getIntermediaryNumber() {
@@ -104,8 +118,10 @@ public class SnapshotPage {
 	private void init() {
 		
 		initBasicInfo();
-		initSummary();
-		initDetail();
+		if (!hasError) {
+			initSummary();
+			initDetail();
+		}
 	}
 	
 	private void initBasicInfo() {
@@ -114,27 +130,21 @@ public class SnapshotPage {
 		if (basicInfoTable != null) {
 			List<String> basicInfo = Utils.getElementText(basicInfoTable);
 			if (basicInfo.size() != 11) {
-				logger.error("The basic info table of [{}:{}] has no necessary items: [{}]", stockCode, snapshotDate, basicInfo);
+				logger.error("[{}]: The basic info table has no necessary items: [{}]", identifier, basicInfo);
 				hasError = true;
 			}else {
-				stockCode = basicInfo.get(4);
-				String dateStr = basicInfo.get(2);
-				if (StringUtils.isBlank(stockCode)) {
-					logger.error("The stock code is blank");
+				String stockCodeOfPage = basicInfo.get(4);
+				if (StringUtils.isBlank(stockCodeOfPage)) {
+					logger.error("[{}]: The stock code of basic info table is blank.", identifier);
 					hasError = true;
-				}
-				if (StringUtils.isEmpty(dateStr)) {
-					logger.error("The snapshot date is empty");
+				}else if (!stockCodeOfPage.equals(stockCode)) {
+					logger.error("[{}]: The stock code [{}] is not expected.", identifier, stockCodeOfPage);
 					hasError = true;
-				}else {
-					try {
-						snapshotDate = LocalDate.parse(dateStr, formatter);
-					} catch (DateTimeParseException e) {
-						logger.error("the snapshot date is in wrong format: [{}]", dateStr);
-						hasError = true;
-					}
 				}
 			}
+		}else {
+			logger.error("[{}]: Cannot find basic info table", identifier);
+			hasError = true;
 		}
 	}
 	
@@ -150,14 +160,15 @@ public class SnapshotPage {
 					intermediaryShareholding = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(intermediariesIndex+1)).longValue();
 					intermediaryNumber = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(intermediariesIndex+2)).shortValue();
 				}else {
-					logger.error("The summary table of [{}:{}] has no necessary items: [{}]", stockCode, snapshotDate, summaryItems);
-					hasError = true;
+					logger.error("[{}]: The summary table has no market intermediaries: [{}]", identifier, summaryItems);
 				}
 				
 				int consentingInvestorIndex = summaryItems.indexOf("Consenting Investor Participants");
 				if (consentingInvestorIndex!=-1 && consentingInvestorIndex<itemSize-2) {
 					consentingShareholding = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(consentingInvestorIndex+1)).longValue();
 					consentingInvestorNumber = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(consentingInvestorIndex+2)).shortValue();
+				}else {
+					logger.debug("[{}]: The summary table of has no consenting investor participants: [{}]", identifier, summaryItems);
 				}
 				
 				int nonConsentingInvestorIndex = summaryItems.indexOf("Non-consenting Investor Participants");
@@ -165,22 +176,39 @@ public class SnapshotPage {
 					nonConsentingShareholding = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(nonConsentingInvestorIndex+1)).longValue();
 					nonConsentingInvestorNumber = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(nonConsentingInvestorIndex+2)).shortValue();
 				}else {
-					logger.error("The summary table of [{}:{}] has no necessary items: [{}]", stockCode, snapshotDate, summaryItems);
-					hasError = true;
+					logger.debug("[{}]: The summary table of has no non-consenting investor participants: [{}]", identifier, summaryItems);
 				}
 				
+				if (intermediaryNumber==0 && consentingInvestorNumber==0 && nonConsentingInvestorNumber==0) {
+					logger.error("[{}]: The summary table has no any participants: [{}]", identifier, summaryItems);
+					hasError = true;
+				}
+
 				int totalIssuedSharesIndex = summaryItems.indexOf("Total number of Issued Shares/Warrants/Units (last updated figure)");
 				if (totalIssuedSharesIndex!=-1 && totalIssuedSharesIndex<itemSize-1) {
 					totalIssuedShares = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(totalIssuedSharesIndex+1)).longValue();
 				}else {
-					logger.error("The summary table of [{}:{}] has no necessary items: [{}]", stockCode, snapshotDate, summaryItems);
+					logger.debug("[{}]: The summary table has no total number of issued shares: [{}]", identifier, summaryItems);
 					hasError = true;
 				}
-
+//				int totalIssuedASharesIndex = summaryItems.indexOf("Total number of A Shares listed and traded");
+//				if (totalIssuedASharesIndex!=-1 && totalIssuedASharesIndex<itemSize-2) {
+//					totalIssuedAShares = NumberFormat.getInstance(Locale.US).parse(summaryItems.get(totalIssuedSharesIndex+2)).longValue();
+//				}else {
+//					logger.debug("[{}]: The summary table has no total number of issued A shares: [{}]", identifier, summaryItems);
+//				}
+//				if (totalIssuedShares==0 && totalIssuedAShares==0) {
+//					logger.error("[{}]: The summary table has no any total issued shares: [{}]", identifier, summaryItems);
+//					hasError = true;
+//				}
+				
 			} catch (ParseException e) {
-				logger.error("The summary table has wrong item(s)");
+				logger.error("[{}]: The summary table has wrong item(s). Underlying exception is [{}].", identifier, e);
 				hasError = true;
 			}
+		}else {
+			logger.error("[{}]: Cannot find summary table", identifier);
+			hasError = true;
 		}
 	}
 	
@@ -190,12 +218,12 @@ public class SnapshotPage {
 		if (detailTable != null) {
 			List<Element> detailEtls = detailTable.children();
 			if (detailEtls.size() > 3) {
-				logger.debug("detail table has {} data rows", detailEtls.size()-3);
+				logger.debug("[{}]: Detail table has {} data rows", identifier, detailEtls.size()-3);
 				for (int i = 3; i < detailEtls.size(); i++) {
 					Element detailElt = detailEtls.get(i);
 					List<String> texts = Utils.getElementText(detailElt);
 					if (texts.size() < 4) {
-						logger.error("The detail row of [{}:{}] has no necessary columns: [{}]", stockCode, snapshotDate, texts);
+						logger.error("[{}]: The detail row has no necessary columns: [{}]", identifier, texts);
 						hasError = true;
 					} else {
 						String participant = texts.get(0);
@@ -204,21 +232,21 @@ public class SnapshotPage {
 						}
 						String shareholding = texts.get(3);
 						if (StringUtils.isEmpty(participant) || StringUtils.isEmpty(shareholding)) {
-							logger.error("Some column(s) is empty: [{},{}]", participant, shareholding);
+							logger.error("[{}]: Some column(s) is empty: [{},{}]", identifier, participant, shareholding);
 							hasError = true;
 						} else {
 							try {
 								detail.put(participant,NumberFormat.getInstance(Locale.US).parse(shareholding).longValue());
 							} catch (ParseException e) {
-								logger.error("participant shareholding is in wrong format: [{}]", shareholding);
+								logger.error("[{}]: Participant shareholding is in wrong format: [{}]", identifier, shareholding);
 								hasError = true;
 							}
 						}
 					}
 				}
-				logger.debug("Get {} rows", detail.size());
+				logger.debug("[{}]: Get {} rows", identifier, detail.size());
 			}else {
-				logger.error("detail table has no data rows");
+				logger.error("[{}]: Detail table has no data rows", identifier);
 				hasError = true;
 			}
 		}

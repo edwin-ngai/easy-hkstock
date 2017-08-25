@@ -2,13 +2,14 @@ package com.wising.easyhkstock.ccass.domain;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 import org.apache.commons.lang3.Validate;
 
 public class SnapshotSummary {
 
 	private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-	
+
 	private String id;
 	private String stockCode;
 	private LocalDate snapshotDate;
@@ -20,12 +21,10 @@ public class SnapshotSummary {
 	private short nonConsentingInvestorNumber;
 	private long nonConsentingShareholding;
 
-	
-	public SnapshotSummary(String stockCode, LocalDate snapshotDate, long totalIssuedShares,
-			short intermediaryNumber, long intermediaryShareholding, short consentingInvestorNumber,
-			long consentingShareholding, short nonConsentingInvestorNumber,
-			long nonConsentingShareholding) {
-		
+	public SnapshotSummary(String stockCode, LocalDate snapshotDate, long totalIssuedShares, short intermediaryNumber,
+			long intermediaryShareholding, short consentingInvestorNumber, long consentingShareholding,
+			short nonConsentingInvestorNumber, long nonConsentingShareholding) {
+
 		Validate.notBlank(stockCode);
 		Validate.notNull(snapshotDate);
 		Validate.isTrue(totalIssuedShares > -1);
@@ -35,9 +34,11 @@ public class SnapshotSummary {
 		Validate.isTrue(consentingShareholding > -1);
 		Validate.isTrue(nonConsentingInvestorNumber > -1);
 		Validate.isTrue(nonConsentingShareholding > -1);
-		//TODO: this validation cannot be asserted true, but whats the underlying reason?
-//		Validate.isTrue(totalIssuedShares > intermediaryShareholding+consentingShareholding+nonConsentingShareholding);
-		
+		// TODO: this validation cannot be asserted true, but whats the
+		// underlying reason?
+		// Validate.isTrue(totalIssuedShares >
+		// intermediaryShareholding+consentingShareholding+nonConsentingShareholding);
+
 		this.stockCode = stockCode;
 		this.snapshotDate = snapshotDate;
 		this.totalIssuedShares = totalIssuedShares;
@@ -47,9 +48,9 @@ public class SnapshotSummary {
 		this.consentingShareholding = consentingShareholding;
 		this.nonConsentingInvestorNumber = nonConsentingInvestorNumber;
 		this.nonConsentingShareholding = nonConsentingShareholding;
-		id = stockCode+snapshotDate.format(formatter);
+		id = stockCode + snapshotDate.format(formatter);
 	}
-	
+
 	public String getId() {
 		return id;
 	}
@@ -58,7 +59,6 @@ public class SnapshotSummary {
 		return stockCode;
 	}
 
-	
 	public LocalDate getSnapshotDate() {
 		return snapshotDate;
 	}
@@ -74,7 +74,7 @@ public class SnapshotSummary {
 	public long getIntermediaryShareholding() {
 		return intermediaryShareholding;
 	}
-	
+
 	public short getConsentingInvestorNumber() {
 		return consentingInvestorNumber;
 	}
@@ -92,15 +92,29 @@ public class SnapshotSummary {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+
+		if (o == this)
+			return true;
+		if (!(o instanceof SnapshotSummary)) {
+			return false;
+		}
+		return Objects.equals(id, ((SnapshotSummary)o).id);
+	}
+
+	@Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+	
+	@Override
 	public String toString() {
 		return "ShareholdingSnapshotSummary [stockCode=" + stockCode + ", snapshotDate=" + snapshotDate
 				+ ", totalIssuedShares=" + totalIssuedShares + ", intermediaryNumber=" + intermediaryNumber
 				+ ", intermediaryShareholding=" + intermediaryShareholding + ", consentingInvestorNumber="
-				+ consentingInvestorNumber + ", consentingShareholding=" + consentingShareholding 
-				+ ", nonConsentingInvestorNumber=" + nonConsentingInvestorNumber + ", nonConsentingShareholding=" 
-				+ nonConsentingShareholding 
-				+ "]";
+				+ consentingInvestorNumber + ", consentingShareholding=" + consentingShareholding
+				+ ", nonConsentingInvestorNumber=" + nonConsentingInvestorNumber + ", nonConsentingShareholding="
+				+ nonConsentingShareholding + "]";
 	}
-	
-	
+
 }

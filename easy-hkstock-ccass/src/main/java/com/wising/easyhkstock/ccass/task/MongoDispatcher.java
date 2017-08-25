@@ -40,6 +40,7 @@ public class MongoDispatcher implements DataDispatcher<SimpleImmutableEntry<Snap
 			summary.add(item.getKey());
 			detail.add(item.getValue());
 		});
+		logger.debug("Starting to save [{}] summaries and [{}] details to mongo db.", summary.size(), detail.size());
 		summaryRepository.save(summary);
 		detailRepository.save(detail);
 		logger.debug("Finished dispatching data to mongo db.");

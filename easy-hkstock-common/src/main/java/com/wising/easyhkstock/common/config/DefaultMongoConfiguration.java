@@ -46,6 +46,7 @@ public class DefaultMongoConfiguration extends AbstractMongoConfiguration {
 	public MappingMongoConverter mappingMongoConverter() throws Exception {
 		MappingMongoConverter converter = super.mappingMongoConverter();
 		converter.setTypeMapper(new DefaultMongoTypeMapper(null));
+		converter.setMapKeyDotReplacement("");
 		return converter;
 	}
 

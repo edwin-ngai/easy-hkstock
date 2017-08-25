@@ -3,6 +3,7 @@ package com.wising.easyhkstock.ccass.domain;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.Validate;
 
@@ -45,6 +46,22 @@ public class SnapshotDetail {
 		return shareholding;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+
+		if (o == this)
+			return true;
+		if (!(o instanceof SnapshotDetail)) {
+			return false;
+		}
+		return Objects.equals(id, ((SnapshotDetail)o).id);
+	}
+
+	@Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+	
 	@Override
 	public String toString() {
 		return "ShareholdingSnapshotSummary [stockCode=" + stockCode + ", snapshotDate=" + snapshotDate

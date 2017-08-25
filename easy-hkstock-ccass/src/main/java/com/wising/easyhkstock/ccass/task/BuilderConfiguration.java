@@ -12,7 +12,11 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 public class BuilderConfiguration {
 
 	private int corePoolSize = 20, 
-			queueCapacity = 20,
+			queueCapacity = Integer.MAX_VALUE,
+			requestTimeout = 2000,
+			connectTimeout = 2000,
+			socketTimeout = 2000,
+			maxConnTotal = 20,
 			searchX = 16, 
 			searchY = 11;
 	private String viewState = "tDLPTY+9LGrF8dCGH1uMqVxtLCnImeR1Rg+mCQ2YRtBJ7LJZyIjC7fDgWmEBXh6Rc26rqjT/SDLA7nPWuqRVmoDs1WuFlUiFjdoXbFq7S/XusAC4squ7OTffwtr7/r7eWIdtFlrvTI1Q1h6fPgfi+6Bx0AXVk2MSkEsPdP6nA0H+JQQUFW+Hym+gGzTIcsg72aIOag==",
@@ -107,6 +111,34 @@ public class BuilderConfiguration {
 	public void setStocks(List<String> stocks) {
 		Validate.notNull(stocks);
 		this.stocks = stocks;
+	}
+	public int getRequestTimeout() {
+		return requestTimeout;
+	}
+	public void setRequestTimeout(int requestTimeout) {
+		Validate.isTrue(requestTimeout > 0);
+		this.requestTimeout = requestTimeout;
+	}
+	public int getConnectTimeout() {
+		return connectTimeout;
+	}
+	public void setConnectTimeout(int connectTimeout) {
+		Validate.isTrue(connectTimeout > 0);
+		this.connectTimeout = connectTimeout;
+	}
+	public int getSocketTimeout() {
+		return socketTimeout;
+	}
+	public void setSocketTimeout(int socketTimeout) {
+		Validate.isTrue(socketTimeout > 0);
+		this.socketTimeout = socketTimeout;
+	}
+	public int getMaxConnTotal() {
+		return maxConnTotal;
+	}
+	public void setMaxConnTotal(int maxConnTotal) {
+		Validate.isTrue(maxConnTotal > 0);
+		this.maxConnTotal = maxConnTotal;
 	}
 
 

@@ -25,11 +25,11 @@ repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
-//	mavenCentral()
+	mavenCentral()
 	mavenLocal()
-//	maven {
-//        url 'https://repo.spring.io/libs-release'
-//    }
+	maven {
+        url 'https://repo.spring.io/libs-release'
+    }
 }
 
 dependencies {
@@ -48,6 +48,7 @@ dependencies {
 	compile 'org.jsoup:jsoup:1.10.3'
 	compile 'org.apache.commons:commons-lang3:3.5'
 	compile 'com.wising.easyhkstock:easy-hkstock-common:0.0.1'
+	compile 'org.apache.httpcomponents:httpclient:4.5.3'
 //	compile "com.fasterxml.jackson.core:jackson-databind:2.8.7"
 //	runtime "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.7"
 	testCompile "org.springframework.boot:spring-boot-starter-test"
