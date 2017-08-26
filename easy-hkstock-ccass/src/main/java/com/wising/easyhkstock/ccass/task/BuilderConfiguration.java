@@ -13,9 +13,9 @@ public class BuilderConfiguration {
 
 	private int corePoolSize = 20, 
 			queueCapacity = Integer.MAX_VALUE,
-			requestTimeout = 2000,
-			connectTimeout = 2000,
-			socketTimeout = 2000,
+			requestTimeout = 30000,
+			connectTimeout = 5000,
+			socketTimeout = 5000,
 			maxConnTotal = 20,
 			searchX = 16, 
 			searchY = 11;

@@ -62,7 +62,8 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 		RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(configuration.getRequestTimeout())
 				.setConnectTimeout(configuration.getConnectTimeout())
 				.setSocketTimeout(configuration.getSocketTimeout()).build();
-		CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).setMaxConnTotal(configuration.getMaxConnTotal()).build();
+		CloseableHttpClient httpClient = HttpClientBuilder.create().useSystemProperties().setDefaultRequestConfig(requestConfig)
+				.setMaxConnTotal(configuration.getMaxConnTotal()).setMaxConnPerRoute(configuration.getMaxConnTotal()).build();
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 		restTpl = new RestTemplate(requestFactory);
 		restTpl.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
@@ -133,7 +134,16 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 			day = "0" + day;
 		}
 		HttpEntity<MultiValueMap<String, String>> request = getHttpEntity(year, month, day, stockCode);
-		ResponseEntity<String> response = restTpl.postForEntity(configuration.getUri(), request, String.class);
+		logger.debug("[{}]: Starting to fetch page.", identifier);
+		ResponseEntity<String> response = null;
+		try {
+			response = restTpl.postForEntity(configuration.getUri(), request, String.class);
+		}catch (Exception ex) {
+			logger.debug("[{}]: Caught exception when fetching page: {}", identifier, ex);
+			ex.printStackTrace();
+		}finally {
+			logger.debug("[{}]: Finished to fetch page.", identifier);
+		}
 		if (response != null && HttpStatus.OK.equals(response.getStatusCode())) {
 			String html = response.getBody();
 			SnapshotPage page = new SnapshotPage(html, stockCode, date);
