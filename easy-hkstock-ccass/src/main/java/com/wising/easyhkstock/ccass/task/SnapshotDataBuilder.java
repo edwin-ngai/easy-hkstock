@@ -40,6 +40,7 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 	private RestTemplate restTpl;
 	private ThreadPoolTaskExecutor executor;
 	private BuilderConfiguration configuration;
+	private boolean terminated;
 
 	public SnapshotDataBuilder(BuilderConfiguration configuration) {
 		Objects.requireNonNull(configuration);
@@ -68,10 +69,22 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 		restTpl = new RestTemplate(requestFactory);
 		restTpl.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
 	}
+	
+	public void terminate() {
+		if (!terminated) {
+			if (executor != null) {
+				executor.shutdown();
+			}
+			terminated = true;
+		}
+	}
 
 	@Override
 	public List<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> build() {
-
+		
+		if (terminated) {
+			throw new IllegalStateException("This builder has been terminated.");
+		}
 		List<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> result = new ArrayList<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>();
 		LocalDate startDate = configuration.getStartDate();
 		LocalDate endDate = configuration.getEndDate();
@@ -114,11 +127,6 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 
 	}
 
-	protected void finalize() {
-		if (executor != null) {
-			executor.shutdown();
-		}
-	}
 
 	private SimpleImmutableEntry<SnapshotSummary, SnapshotDetail> getData(LocalDate date, String stockCode) {
 

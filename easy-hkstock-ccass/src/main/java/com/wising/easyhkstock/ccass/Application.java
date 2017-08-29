@@ -67,18 +67,21 @@ public class Application implements ApplicationRunner {
 		DataTask<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> snapshotTask
 			= new DataTask<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>(snapshotBuilder);
 		snapshotTask.addDispatcher(new MongoDispatcher(summaryRepository, detailRepository));
-
+		
 		if (args.containsOption("once")) {
-			LocalDate startDate = builderConf.getStartDate();
-			LocalDate endDate = builderConf.getEndDate();
-			while (startDate.isBefore(endDate)) {
-				builderConf.setStartDate(startDate);
-				LocalDate newEndDate = startDate.plusDays(1);
-				builderConf.setEndDate(newEndDate);
-				snapshotTask.run();
-				startDate = newEndDate;
+			try {
+				LocalDate startDate = builderConf.getStartDate();
+				LocalDate endDate = builderConf.getEndDate();
+				while (startDate.isBefore(endDate)) {
+					builderConf.setStartDate(startDate);
+					LocalDate newEndDate = startDate.plusDays(1);
+					builderConf.setEndDate(newEndDate);
+					snapshotTask.run();
+					startDate = newEndDate;
+				}
+			}finally {
+				snapshotBuilder.terminate();
 			}
-			System.exit(0);
 		}else {
 			ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
 			scheduler.setPoolSize(1);
