@@ -72,7 +72,7 @@ public class Application implements ApplicationRunner {
 			try {
 				LocalDate startDate = builderConf.getStartDate();
 				LocalDate endDate = builderConf.getEndDate();
-				while (startDate.isBefore(endDate)) {
+				while (startDate.isBefore(endDate) || startDate.equals(endDate)) {
 					builderConf.setStartDate(startDate);
 					LocalDate newEndDate = startDate.plusDays(1);
 					builderConf.setEndDate(newEndDate);

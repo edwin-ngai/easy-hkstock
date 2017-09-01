@@ -55,6 +55,7 @@ public class SnapshotPage {
 		this.stockCode = stockCode;
 		this.snapshotDate = snapshotDate;
 		this.identifier = stockCode + ":" + snapshotDate;
+		logger.debug("[{}]: Start to parse html.", identifier);
 		doc = Jsoup.parse(html);
 		if (doc != null) {
 			init();
@@ -126,6 +127,7 @@ public class SnapshotPage {
 	
 	private void initBasicInfo() {
 		
+		logger.debug("[{}]: Start to init basic info", identifier);
 		Element basicInfoTable = doc.select(basicInfoSelector).first();
 		if (basicInfoTable != null) {
 			List<String> basicInfo = Utils.getElementText(basicInfoTable);
@@ -150,6 +152,7 @@ public class SnapshotPage {
 	
 	private void initSummary() {
 		
+		logger.debug("[{}]: Start to init summary info", identifier);
 		Element summaryTable = doc.select(summarySelector).first();
 		if (summaryTable != null) {
 			List<String> summaryItems = Utils.getElementText(summaryTable);
@@ -214,6 +217,7 @@ public class SnapshotPage {
 	
 	private void initDetail() {
 		
+		logger.debug("[{}]: Start to init detail info", identifier);
 		Element detailTable = doc.select(detailSelector).first();
 		if (detailTable != null) {
 			List<Element> detailEtls = detailTable.children();

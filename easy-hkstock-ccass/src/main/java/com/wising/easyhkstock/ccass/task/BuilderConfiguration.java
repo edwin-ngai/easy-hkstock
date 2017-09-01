@@ -11,7 +11,9 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 public class BuilderConfiguration {
 
-	private int corePoolSize = 20, 
+	private int 
+			fetcherNo = 20,
+			corePoolSize = 20, 
 			queueCapacity = Integer.MAX_VALUE,
 			requestTimeout = 30000,
 			connectTimeout = 5000,
@@ -140,6 +142,14 @@ public class BuilderConfiguration {
 		Validate.isTrue(maxConnTotal > 0);
 		this.maxConnTotal = maxConnTotal;
 	}
+	public int getFetcherNo() {
+		return fetcherNo;
+	}
+	public void setFetcherNo(int fetcherNo) {
+		Validate.isTrue(fetcherNo > 0);
+		this.fetcherNo = fetcherNo;
+	}
 
+	
 
 }
