@@ -24,6 +24,7 @@ import com.wising.easyhkstock.ccass.domain.repository.SnapshotDetailRepository;
 import com.wising.easyhkstock.ccass.domain.repository.SnapshotSummaryRepository;
 import com.wising.easyhkstock.ccass.task.BuilderConfiguration;
 import com.wising.easyhkstock.ccass.task.MongoDispatcher;
+import com.wising.easyhkstock.ccass.task.ParallelSnapshotDataBuilder;
 import com.wising.easyhkstock.ccass.task.SnapshotDataBuilder;
 import com.wising.easyhkstock.common.domain.Stock;
 import com.wising.easyhkstock.common.repository.StockRepository;
@@ -63,7 +64,8 @@ public class Application implements ApplicationRunner {
 			}
 		}
 		
-		SnapshotDataBuilder snapshotBuilder = new SnapshotDataBuilder(configuration.getBuilder());
+//		SnapshotDataBuilder snapshotBuilder = new SnapshotDataBuilder(configuration.getBuilder());
+		ParallelSnapshotDataBuilder snapshotBuilder = new ParallelSnapshotDataBuilder(configuration.getBuilder());
 		DataTask<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> snapshotTask
 			= new DataTask<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>(snapshotBuilder);
 		snapshotTask.addDispatcher(new MongoDispatcher(summaryRepository, detailRepository));
@@ -72,7 +74,7 @@ public class Application implements ApplicationRunner {
 			try {
 				LocalDate startDate = builderConf.getStartDate();
 				LocalDate endDate = builderConf.getEndDate();
-				while (startDate.isBefore(endDate) || startDate.equals(endDate)) {
+				while (startDate.isBefore(endDate)) {
 					builderConf.setStartDate(startDate);
 					LocalDate newEndDate = startDate.plusDays(1);
 					builderConf.setEndDate(newEndDate);
