@@ -1,17 +1,17 @@
 package com.wising.easyhkstock.ccass.task;
 
-import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +20,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -27,11 +30,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsAsyncClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -44,9 +48,8 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 	private static final Logger logger = LoggerFactory.getLogger(ParallelSnapshotDataBuilder.class);
 
 	private RestTemplate restTpl;
+	private AsyncRestTemplate asyncRestTpl;
 	private ThreadPoolTaskExecutor executor;
-//	private ThreadPoolTaskExecutor fetcherPool;
-//	private ThreadPoolTaskExecutor parserPool;
 	private BuilderConfiguration configuration;
 	private boolean terminated;
 
@@ -55,6 +58,7 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 		this.configuration = configuration;
 		initExecutor();
 		initRestTemplate();
+//		initAsyncRestTemplate();
 	}
 
 	private void initExecutor() {
@@ -67,19 +71,6 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 		if (logger.isDebugEnabled()) {
 			logger.debug("Finish executor initialization. The core pool size is [{}]", configuration.getCorePoolSize());
 		}
-//		fetcherPool = new ThreadPoolTaskExecutor();
-//		fetcherPool.setCorePoolSize(configuration.getCorePoolSize());
-//		fetcherPool.setQueueCapacity(configuration.getQueueCapacity());
-//		fetcherPool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-//		fetcherPool.setWaitForTasksToCompleteOnShutdown(true);
-//		fetcherPool.initialize();
-//
-//		parserPool = new ThreadPoolTaskExecutor();
-//		parserPool.setCorePoolSize(configuration.getCorePoolSize());
-//		parserPool.setQueueCapacity(configuration.getQueueCapacity());
-//		parserPool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-//		parserPool.setWaitForTasksToCompleteOnShutdown(true);
-//		parserPool.initialize();
 	}
 
 	private void initRestTemplate() {
@@ -93,10 +84,25 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 				.setMaxConnPerRoute(configuration.getMaxConnTotal()).build();
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 		restTpl = new RestTemplate(requestFactory);
-		restTpl.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+//		restTpl.getMessageConverters().add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
 		if (logger.isDebugEnabled()) {
 			logger.debug("Finish http client initialization. The pool size is [{}]", configuration.getMaxConnTotal());
 		}
+	}
+	
+	private void initAsyncRestTemplate() {
+		
+		RequestConfig requestConfig = RequestConfig.custom()
+				.setConnectionRequestTimeout(configuration.getRequestTimeout())
+				.setConnectTimeout(configuration.getConnectTimeout()).setSocketTimeout(configuration.getSocketTimeout())
+				.build();
+		Properties prop = new Properties();
+		System.setProperty("http.maxConnections", String.valueOf(configuration.getMaxConnTotal()));
+		IOReactorConfig reactorConfig = IOReactorConfig.custom().setIoThreadCount(20).build();
+		CloseableHttpAsyncClient httpClient = HttpAsyncClientBuilder.create().useSystemProperties()
+				.setDefaultRequestConfig(requestConfig).setDefaultIOReactorConfig(reactorConfig).build();
+		HttpComponentsAsyncClientHttpRequestFactory requestFactory = new HttpComponentsAsyncClientHttpRequestFactory(httpClient);
+		asyncRestTpl = new AsyncRestTemplate(requestFactory);
 	}
 
 	public void terminate() {
@@ -116,7 +122,7 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 		}
 		
 		if (logger.isDebugEnabled()) {
-			logger.debug("Start to build date");
+			logger.debug("Start to build data");
 		}
 		// setup fetcher
 		ConcurrentLinkedQueue<FetchingInfo> fetcherInput = new ConcurrentLinkedQueue<FetchingInfo>();
@@ -124,6 +130,9 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 		LocalDate endDate = configuration.getEndDate();
 		int totalDays = Period.between(startDate, endDate).getDays();
 		List<String> stockList = configuration.getStocks();
+		if (logger.isInfoEnabled()) {
+			logger.info("There are [{}] stocks", stockList.size());
+		}
 		while (startDate.isBefore(endDate)) {
 			final LocalDate date = startDate;
 			stockList.forEach(stock -> fetcherInput.offer(new FetchingInfo(stock, date)));
@@ -132,7 +141,7 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 		LinkedBlockingQueue<PageInfo> fetcherOutput = new LinkedBlockingQueue<PageInfo>();
 		CountDownLatch fetcherDoneSignal = new CountDownLatch(configuration.getFetcherNo());
 		AtomicBoolean fetcherDoneIndicator = new AtomicBoolean(false);
-		new Thread(new Monitor("Fetcher", fetcherDoneSignal, fetcherDoneIndicator)).start();
+//		AsyncFetcher fetcher = new AsyncFetcher(fetcherInput, fetcherOutput, fetcherDoneSignal);
 		Fetcher fetcher = new Fetcher(fetcherInput, fetcherOutput, fetcherDoneSignal);
 		for (int i = 0, size = configuration.getFetcherNo(); i < size; i++) {
 			executor.submit(fetcher);
@@ -142,32 +151,43 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 		}
 		
 		// setup parser
-		ConcurrentLinkedQueue<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> parserOutput 
-			= new ConcurrentLinkedQueue<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>();
-		CountDownLatch parserDoneSignal = new CountDownLatch(configuration.getParserNo());
-		Parser parser = new Parser(fetcherOutput, parserOutput, fetcherDoneIndicator, parserDoneSignal);
-		for (int i=0, size=configuration.getParserNo(); i<size; i++) {
-			executor.submit(parser);
-		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Finish parser setup. Total parser number is [{}]", configuration.getParserNo());
-		}
-		
+//		new Thread(new Monitor("Fetcher", fetcherDoneSignal, fetcherDoneIndicator)).start();
+//		ConcurrentLinkedQueue<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>> parserOutput 
+//			= new ConcurrentLinkedQueue<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>();
+//		CountDownLatch parserDoneSignal = new CountDownLatch(configuration.getParserNo());
+//		Parser parser = new Parser(fetcherOutput, parserOutput, fetcherDoneIndicator, parserDoneSignal);
+//		for (int i=0, size=configuration.getParserNo(); i<size; i++) {
+//			executor.submit(parser);
+//		}
+//
+//		if (logger.isDebugEnabled()) {
+//			logger.debug("Finish parser setup. Total parser number is [{}]", configuration.getParserNo());
+//		}		
+//		try {
+//			parserDoneSignal.await();
+//		} catch (InterruptedException e) {
+//			// This should not happen
+//			if (logger.isDebugEnabled()) {
+//				logger.debug("Builder is interrupted unexpected. Exception detail: \n", e);
+//			}
+//		}
+//		if (logger.isInfoEnabled()) {
+//			logger.info("Totally processing {} days of data with [{}] records", totalDays, parserOutput.size());
+//		}
+//
+//		return Collections.unmodifiableList(new ArrayList<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>(parserOutput));
 		try {
-			parserDoneSignal.await();
-//			fetcherDoneSignal.await();
+			fetcherDoneSignal.await();
 		} catch (InterruptedException e) {
 			// This should not happen
-			if (logger.isDebugEnabled()) {
-				logger.debug("Builder is interrupted unexpected. Exception detail: \n", e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Builder is interrupted unexpected. Exception detail: \n", e);
 			}
 		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Totally processing {} days of data with [{}] records", totalDays, parserOutput.size());
+		if (logger.isInfoEnabled()) {
+			logger.info("Finished");
 		}
-
-		return Collections.unmodifiableList(new ArrayList<SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>>(parserOutput));
-//		return new ArrayList();
+		return new ArrayList();
 	}
 
 	private static class FetchingInfo {
@@ -221,29 +241,43 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 					if (logger.isDebugEnabled()) {
 						logger.debug("[{}:{}]: Starting to fetch page.", pendingEntry.stock, pendingEntry.date);
 					}
+					Long duration = System.currentTimeMillis();
 					ResponseEntity<String> response = null;
 					try {
 						response = restTpl.postForEntity(configuration.getUri(), request, String.class);
 						if (response != null && HttpStatus.OK.equals(response.getStatusCode())) {
+							if (logger.isTraceEnabled()) {
+								duration = System.currentTimeMillis() - duration;
+								long length = response.getHeaders().getContentLength();
+								if (duration > 1000) {
+									logger.info("[{}:{}]: too long: [{}]ms for [{}] bytes. data rate is [{}] bytes/ms.", pendingEntry.stock, pendingEntry.date, duration, length, length/duration);
+								}else if (duration < 100) {
+									logger.info("[{}:{}]: so fast: [{}]ms for [{}] bytes. data rate is [{}] bytes/ms.", pendingEntry.stock, pendingEntry.date, duration, length, length/duration);
+								}else {
+									logger.info("[{}:{}]: normal: [{}]ms for [{}] bytes. data rate is [{}] bytes/ms.", pendingEntry.stock, pendingEntry.date, duration, length, length/duration);
+								}
+							}
 							String html = response.getBody();
 							if (html != null) {
 								output.offer(new PageInfo(pendingEntry.stock, pendingEntry.date, html));
-							} else if (logger.isDebugEnabled()) {
+							} else if (logger.isErrorEnabled()) {
 								logger.error("[{}:{}]: Got null body of response.", pendingEntry.stock,
 										pendingEntry.date);
 							}
-						} else if (logger.isDebugEnabled()) {
+						} else if (logger.isErrorEnabled()) {
 							logger.error("[{}:{}]: Got error response:\n{}\nOriginal Request is\n{}",
 									pendingEntry.stock, pendingEntry.date, response, request);
 						}
 					} catch (RestClientException ex) {
-						if (logger.isInfoEnabled()) {
-							logger.info("[{}:{}]: Encouter exception when fetching page.Exception message is\n{}",
+						if (logger.isErrorEnabled()) {
+							logger.error("[{}:{}]: Encounter exception when fetching page. Exception message is\n{}",
 									pendingEntry.stock, pendingEntry.date, ex.getMessage());
 						}
 						if (logger.isDebugEnabled()) {
 							logger.debug("Detailed exception is\n", ex);
+							logger.debug("Will push back the entity for processing again");
 						}
+						input.offer(pendingEntry);
 					} finally {
 						if (logger.isDebugEnabled()) {
 							logger.debug("[{}:{}]: Finished to fetch page.", pendingEntry.stock, pendingEntry.date);
@@ -290,14 +324,132 @@ public class ParallelSnapshotDataBuilder implements DataBuilder<SimpleImmutableE
 			body.add("ddlShareholdingMonth", month);
 			body.add("ddlShareholdingYear", year);
 			body.add("txtStockCode", stock);
-			if (logger.isDebugEnabled()) {
-				logger.debug("__VIEWSTATE:{}", body.get("__VIEWSTATE"));
-				logger.debug("__EVENTVALIDATION:{}", body.get("__EVENTVALIDATION"));
-			}
+//			if (logger.isDebugEnabled()) {
+//				logger.debug("__VIEWSTATE:{}", body.get("__VIEWSTATE"));
+//				logger.debug("__EVENTVALIDATION:{}", body.get("__EVENTVALIDATION"));
+//			}
 			return new HttpEntity<MultiValueMap<String, String>>(body, headers);
 		}
 	}
 
+	private class AsyncFetcher implements Runnable {
+
+		ConcurrentLinkedQueue<FetchingInfo> input;
+		LinkedBlockingQueue<PageInfo> output;
+		CountDownLatch doneSignal;
+		Random random = new Random();
+
+		AsyncFetcher(ConcurrentLinkedQueue<FetchingInfo> input, LinkedBlockingQueue<PageInfo> output,
+				CountDownLatch doneSignal) {
+			this.input = input;
+			this.output = output;
+			this.doneSignal = doneSignal;
+		}
+
+		@Override
+		public void run() {
+
+			if (logger.isDebugEnabled()) {
+				logger.debug("Fetcher [{}] starts to run.", Thread.currentThread().getName());
+			}
+			boolean completed = false;
+			while (!completed) {
+				FetchingInfo pendingEntry = input.poll();
+				if (pendingEntry != null) {
+					HttpEntity<MultiValueMap<String, String>> request = getHttpEntity(pendingEntry.stock,
+							pendingEntry.date);
+					Long duration = System.currentTimeMillis();
+					if (logger.isDebugEnabled()) {
+						logger.debug("[{}:{}]: Starting to fetch page.", pendingEntry.stock, pendingEntry.date);
+					}
+					ResponseEntity<String> response = null;
+					try {
+						response = asyncRestTpl.postForEntity(configuration.getUri(), request, String.class).get();
+						duration = System.currentTimeMillis() - duration;
+						if (duration > 1000) {
+							logger.info("[{}:{}]: too long: [{}]ms.", pendingEntry.stock, pendingEntry.date, duration);
+						}
+						if (response != null && HttpStatus.OK.equals(response.getStatusCode())) {
+							String html = response.getBody();
+							if (html != null) {
+								//output.offer(new PageInfo(pendingEntry.stock, pendingEntry.date, html));
+							} else if (logger.isErrorEnabled()) {
+								logger.error("[{}:{}]: Got null body of response.", pendingEntry.stock,
+										pendingEntry.date);
+							}
+						} else if (logger.isErrorEnabled()) {
+							logger.error("[{}:{}]: Got error response:\n{}\nOriginal Request is\n{}",
+									pendingEntry.stock, pendingEntry.date, response, request);
+						}
+					} catch (RestClientException ex) {
+						if (logger.isErrorEnabled()) {
+							logger.error("[{}:{}]: Encounter exception when fetching page. Exception message is\n{}",
+									pendingEntry.stock, pendingEntry.date, ex.getMessage());
+						}
+						if (logger.isDebugEnabled()) {
+							logger.debug("Detailed exception is\n", ex);
+						}
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (ExecutionException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} finally {
+						if (logger.isDebugEnabled()) {
+							logger.debug("[{}:{}]: Finished to fetch page.", pendingEntry.stock, pendingEntry.date);
+						}
+					}
+				} else {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Fetcher [{}] cannot get fetchin info.", Thread.currentThread().getName());
+					}
+					completed = true;
+				}
+			}
+			if (logger.isDebugEnabled()) {
+				logger.debug("Fetcher [{}] completes.", Thread.currentThread().getName());
+			}
+			doneSignal.countDown();
+		}
+
+		private HttpEntity<MultiValueMap<String, String>> getHttpEntity(String stock, LocalDate date) {
+
+			String year = String.valueOf(date.getYear());
+			int intMonth = date.getMonthValue();
+			String month = String.valueOf(intMonth);
+			if (month.length() == 1) {
+				month = "0" + month;
+			}
+			int intDay = date.getDayOfMonth();
+			String day = String.valueOf(intDay);
+			if (day.length() == 1) {
+				day = "0" + day;
+			}
+
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
+			int index = random.nextInt(2);
+			body.add("__VIEWSTATE", configuration.getTokens().get(index).getViewState());
+			body.add("__EVENTVALIDATION", configuration.getTokens().get(index).getEventValidation());
+//			body.add("__VIEWSTATE", configuration.getViewState());
+//			body.add("__EVENTVALIDATION", configuration.getEventValidation());
+			body.add("btnSearch.x", String.valueOf(configuration.getSearchX()));
+			body.add("btnSearch.y", String.valueOf(configuration.getSearchY()));
+			body.add("ddlShareholdingDay", day);
+			body.add("ddlShareholdingMonth", month);
+			body.add("ddlShareholdingYear", year);
+			body.add("txtStockCode", stock);
+//			if (logger.isDebugEnabled()) {
+//				logger.debug("__VIEWSTATE:{}", body.get("__VIEWSTATE"));
+//				logger.debug("__EVENTVALIDATION:{}", body.get("__EVENTVALIDATION"));
+//			}
+			return new HttpEntity<MultiValueMap<String, String>>(body, headers);
+		}
+	}
+
+	
 	private class Parser implements Runnable {
 
 		LinkedBlockingQueue<PageInfo> input;

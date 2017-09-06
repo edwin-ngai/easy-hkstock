@@ -12,15 +12,15 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 public class BuilderConfiguration {
 
 	private int 
-			fetcherNo = 20,
-			parserNo = 40,
+			fetcherNo = 8,
+			parserNo = 80,
 			parserTimeout = 1000,
-			corePoolSize = 60, 
+			corePoolSize = 240, 
 			queueCapacity = Integer.MAX_VALUE,
-			requestTimeout = 30000,
-			connectTimeout = 5000,
-			socketTimeout = 5000,
-			maxConnTotal = 20,
+			requestTimeout = 1000,
+			connectTimeout = 1000,
+			socketTimeout = -1,
+			maxConnTotal = 8,
 			searchX = 16, 
 			searchY = 11;
 	private List<Token> tokens = new ArrayList<Token>();
