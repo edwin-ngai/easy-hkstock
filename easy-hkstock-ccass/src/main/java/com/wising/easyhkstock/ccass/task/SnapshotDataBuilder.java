@@ -155,23 +155,9 @@ public class SnapshotDataBuilder implements DataBuilder<SimpleImmutableEntry<Sna
 		if (response != null && HttpStatus.OK.equals(response.getStatusCode())) {
 			String html = response.getBody();
 			SnapshotPage page = new SnapshotPage(html, stockCode, date);
-			if (!page.hasError()) {
-				String stockCodeOfPage = page.getStockCode();
-				// should note use the snapshot date of page, as it may be
-				// different with the input date
-				// LocalDate snapshotDate = page.getSnapshotDate();
-				long totalIssuedShares = page.getTotalIssuedShares();
-				long intermediaryShareholding = page.getIntermediaryShareholding();
-				short intermediaryNumber = page.getIntermediaryNumber();
-				long consentingShareholding = page.getConsentingShareholding();
-				short consentingInvestorNumber = page.getConsentingInvestorNumber();
-				long nonConsentingShareholding = page.getNonConsentingShareholding();
-				short nonConsentingInvestorNumber = page.getNonConsentingInvestorNumber();
-				Map<String, Long> details = page.getDetail();
-				SnapshotSummary summary = new SnapshotSummary(stockCodeOfPage, date, totalIssuedShares,
-						intermediaryNumber, intermediaryShareholding, consentingInvestorNumber, consentingShareholding,
-						nonConsentingInvestorNumber, nonConsentingShareholding);
-				SnapshotDetail detail = new SnapshotDetail(stockCodeOfPage, date, details);
+			SnapshotSummary summary = page.getSummary();
+			SnapshotDetail detail = page.getDetai();
+			if (summary != null && detail != null) {
 				result = new SimpleImmutableEntry<SnapshotSummary, SnapshotDetail>(summary, detail);
 			} else {
 				logger.error("[{}]: Got error when parsing html page.", identifier);

@@ -25,7 +25,6 @@ import com.wising.easyhkstock.ccass.domain.repository.SnapshotSummaryRepository;
 import com.wising.easyhkstock.ccass.task.BuilderConfiguration;
 import com.wising.easyhkstock.ccass.task.MongoDispatcher;
 import com.wising.easyhkstock.ccass.task.ParallelSnapshotDataBuilder;
-import com.wising.easyhkstock.ccass.task.SnapshotDataBuilder;
 import com.wising.easyhkstock.common.domain.Stock;
 import com.wising.easyhkstock.common.repository.StockRepository;
 import com.wising.easyhkstock.common.task.DataTask;
@@ -56,7 +55,7 @@ public class Application implements ApplicationRunner {
 		
 		BuilderConfiguration builderConf = configuration.getBuilder();
 		if (builderConf.getStocks().isEmpty()) {
-			List<String> stocks = stockRepository.findAll().stream().map(Stock::getCode).filter(code->!code.startsWith("9"))
+			List<String> stocks = stockRepository.findAll().stream().map(Stock::getCode).filter(code->code.startsWith("0"))
 					.collect(Collectors.toList());
 			if (stocks!=null) {
 				builderConf.setStocks(stocks);

@@ -13,9 +13,9 @@ public class BuilderConfiguration {
 
 	private int 
 			fetcherNo = 8,
-			parserNo = 80,
+			parserNo = 20,
 			parserTimeout = 1000,
-			corePoolSize = 240, 
+			corePoolSize = 100, 
 			queueCapacity = Integer.MAX_VALUE,
 			requestTimeout = 1000,
 			connectTimeout = 1000,

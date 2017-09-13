@@ -2,7 +2,7 @@ package com.wising.easyhkstock.ccass.domain;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.Validate;
@@ -14,19 +14,19 @@ public class SnapshotDetail {
 	private String id;
 	private String stockCode;
 	private LocalDate snapshotDate;
-	private Map<String, Long> shareholding;
+	private List<Shareholding> shareholdings;
 
 	
-	public SnapshotDetail(String stockCode, LocalDate snapshotDate, Map<String, Long> shareholding) {
+	public SnapshotDetail(String stockCode, LocalDate snapshotDate, List<Shareholding> shareholdings) {
 		
 		Validate.notBlank(stockCode);
 		Validate.notNull(snapshotDate);
-		Validate.notNull(shareholding);
-		Validate.isTrue(!shareholding.isEmpty());
+		Validate.notNull(shareholdings);
+		Validate.isTrue(!shareholdings.isEmpty());
 		
 		this.stockCode = stockCode;
 		this.snapshotDate = snapshotDate;
-		this.shareholding = shareholding;
+		this.shareholdings = shareholdings;
 		id = stockCode+snapshotDate.format(formatter);
 	}
 	
@@ -42,8 +42,8 @@ public class SnapshotDetail {
 		return snapshotDate;
 	}
 
-	public Map<String, Long> getShareholding() {
-		return shareholding;
+	public List<Shareholding> getShareholdings() {
+		return shareholdings;
 	}
 
 	@Override
@@ -65,8 +65,26 @@ public class SnapshotDetail {
 	@Override
 	public String toString() {
 		return "ShareholdingSnapshotSummary [stockCode=" + stockCode + ", snapshotDate=" + snapshotDate
-				+ ", shareholding=" + shareholding + "]";
+				+ ", shareholdings=" + shareholdings + "]";
 	}
 	
-	
+	public static class Shareholding {
+		
+		String shareholder;
+		long shareholding;
+		float percentage;
+		
+		public Shareholding(String shareholder, long shareholding, float percentage) {
+			this.shareholder = shareholder;
+			this.shareholding = shareholding;
+			this.percentage = percentage;
+		}
+
+		@Override
+		public String toString() {
+			return "Shareholding [shareholder=" + shareholder + ", shareholding=" + shareholding + ", percentage="
+					+ percentage + "]";
+		}
+		
+	}
 }

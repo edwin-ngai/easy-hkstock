@@ -8,8 +8,8 @@ import org.apache.commons.lang3.Validate;
 
 public class SnapshotSummary {
 
-	private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-
+	private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+	
 	private String id;
 	private String stockCode;
 	private LocalDate snapshotDate;
@@ -21,6 +21,12 @@ public class SnapshotSummary {
 	private short nonConsentingInvestorNumber;
 	private long nonConsentingShareholding;
 
+	private long totalShareholding;
+	private float intermediaryShareholdingPercentage;
+	private float consentingShareholdingPercentage;
+	private float nonConsentingShareholdingPercentage;
+	private boolean outdatedTotalIssuedShares;
+	
 	public SnapshotSummary(String stockCode, LocalDate snapshotDate, long totalIssuedShares, short intermediaryNumber,
 			long intermediaryShareholding, short consentingInvestorNumber, long consentingShareholding,
 			short nonConsentingInvestorNumber, long nonConsentingShareholding) {
@@ -48,7 +54,19 @@ public class SnapshotSummary {
 		this.consentingShareholding = consentingShareholding;
 		this.nonConsentingInvestorNumber = nonConsentingInvestorNumber;
 		this.nonConsentingShareholding = nonConsentingShareholding;
-		id = stockCode + snapshotDate.format(formatter);
+		
+		this.totalShareholding = this.intermediaryShareholding + this.consentingShareholding + this.nonConsentingShareholding;
+		if (this.totalShareholding > this.totalIssuedShares) {
+			outdatedTotalIssuedShares = true;
+			this.intermediaryShareholdingPercentage = (float)(this.intermediaryShareholding * 1D / this.totalShareholding);
+			this.consentingShareholdingPercentage = (float)(this.consentingShareholding * 1D / this.totalShareholding);
+			this.nonConsentingShareholdingPercentage = (float)(this.nonConsentingShareholding * 1D / this.totalShareholding);
+		}else {
+			this.intermediaryShareholdingPercentage = (float)(this.intermediaryShareholding * 1D / this.totalIssuedShares);
+			this.consentingShareholdingPercentage = (float)(this.consentingShareholding * 1D / this.totalIssuedShares);
+			this.nonConsentingShareholdingPercentage = (float)(this.nonConsentingShareholding * 1D / this.totalIssuedShares);
+		}
+		id = stockCode + snapshotDate.format(dateFormatter);
 	}
 
 	public String getId() {
@@ -90,7 +108,26 @@ public class SnapshotSummary {
 	public long getNonConsentingShareholding() {
 		return nonConsentingShareholding;
 	}
+	
+	public long getTotalShareholding() {
+		return totalShareholding;
+	}
 
+	public float getIntermediaryShareholdingPercentage() {
+		return intermediaryShareholdingPercentage;
+	}
+
+	public float getConsentingShareholdingPercentage() {
+		return consentingShareholdingPercentage;
+	}
+
+	public float getNonConsentingShareholdingPercentage() {
+		return nonConsentingShareholdingPercentage;
+	}
+
+	public boolean isOutdatedTotalIssuedShares() {
+		return this.outdatedTotalIssuedShares;
+	}
 	@Override
 	public boolean equals(Object o) {
 
@@ -106,15 +143,18 @@ public class SnapshotSummary {
     public int hashCode() {
         return Objects.hash(id);
     }
-	
+
 	@Override
 	public String toString() {
-		return "ShareholdingSnapshotSummary [stockCode=" + stockCode + ", snapshotDate=" + snapshotDate
-				+ ", totalIssuedShares=" + totalIssuedShares + ", intermediaryNumber=" + intermediaryNumber
-				+ ", intermediaryShareholding=" + intermediaryShareholding + ", consentingInvestorNumber="
-				+ consentingInvestorNumber + ", consentingShareholding=" + consentingShareholding
-				+ ", nonConsentingInvestorNumber=" + nonConsentingInvestorNumber + ", nonConsentingShareholding="
-				+ nonConsentingShareholding + "]";
+		return "SnapshotSummary [stockCode=" + stockCode + ", snapshotDate=" + snapshotDate + ", totalIssuedShares="
+				+ totalIssuedShares + ", intermediaryNumber=" + intermediaryNumber + ", intermediaryShareholding="
+				+ intermediaryShareholding + ", consentingInvestorNumber=" + consentingInvestorNumber
+				+ ", consentingShareholding=" + consentingShareholding + ", nonConsentingInvestorNumber="
+				+ nonConsentingInvestorNumber + ", nonConsentingShareholding=" + nonConsentingShareholding
+				+ ", totalShareholding=" + totalShareholding + ", intermediaryShareholdingPercentage="
+				+ intermediaryShareholdingPercentage + ", consentingShareholdingPercentage="
+				+ consentingShareholdingPercentage + ", nonConsentingShareholdingPercentage="
+				+ nonConsentingShareholdingPercentage + ", outdatedTotalIssuedShares=" 
+				+ outdatedTotalIssuedShares + "]";
 	}
-
 }
