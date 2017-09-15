@@ -1,8 +1,23 @@
 <template>
-  <div id="app">
-    <img src="./assets/logo.png">
-    <router-view></router-view>
-  </div>
+  	<v-app id="easy-hkstock" toolbar fill-height>
+	  	<v-navigation-drawer temporary :mini-variant.sync="mini">
+	  	</v-navigation-drawer>
+	  	<v-navigation-drawer temporary right :mini-variant.sync="mini">
+	  	</v-navigation-drawer>
+  		<v-toolbar fixed dense>
+	  		<v-toolbar-side-icon></v-toolbar-side-icon>
+	  		<v-spacer></v-spacer>
+	  		<v-btn icon>
+      			<v-icon>account-circle</v-icon>
+    		</v-btn>
+  		</v-toolbar>
+ 		<main>
+    		<v-container fluid>
+      			<router-view></router-view>
+    		</v-container>
+  		</main>
+  		<v-footer></v-footer>
+	</v-app>
 </template>
 
 <script>
@@ -11,13 +26,4 @@ export default {
 }
 </script>
 
-<style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
+
