@@ -1,19 +1,35 @@
 <template>
-  	<v-app id="easy-hkstock" toolbar fill-height>
-	  	<v-navigation-drawer temporary :mini-variant.sync="mini">
+  	<v-app id="easy-hkstock">
+	  	<v-navigation-drawer temporary v-model="menuDrawer" class="clipped-drawer">
+	  		<v-list>
+	        <v-list-tile v-for="menu in menus" :key="menu.title" :to="{path: menu.href}">
+	          <v-list-tile-action>
+	            <v-list-tile-title>{{ menu.title }}</v-list-tile-title>
+	          </v-list-tile-action>
+	        </v-list-tile>
+      	</v-list>
 	  	</v-navigation-drawer>
-	  	<v-navigation-drawer temporary right :mini-variant.sync="mini">
-	  	</v-navigation-drawer>
-  		<v-toolbar fixed dense>
-	  		<v-toolbar-side-icon></v-toolbar-side-icon>
+  		<v-toolbar fixed>
+	  		<v-toolbar-side-icon  @click.stop="menuDrawer = !menuDrawer"></v-toolbar-side-icon>
 	  		<v-spacer></v-spacer>
-	  		<v-btn icon>
-      			<v-icon>account-circle</v-icon>
+	  		<v-btn icon @click.stop="accountDrawer = !accountDrawer">
+      			<v-icon >account_circle</v-icon>
     		</v-btn>
   		</v-toolbar>
- 		<main>
+  		<v-navigation-drawer temporary right v-model="accountDrawer" class="clipped-drawer">
+      	<v-list>
+	        <v-list-tile>
+	          <v-list-tile-action>
+	            <v-list-tile-title>Preference</v-list-tile-title>
+	          </v-list-tile-action>
+	        </v-list-tile>
+      	</v-list>
+    	</v-navigation-drawer>
+ 			<main>
     		<v-container fluid>
-      			<router-view></router-view>
+      			<v-fade-transition mode="out-in">
+              <router-view></router-view>
+            </v-fade-transition>
     		</v-container>
   		</main>
   		<v-footer></v-footer>
@@ -22,8 +38,25 @@
 
 <script>
 export default {
-  name: 'app'
+  props: {
+    menus: {
+      type: Array,
+      required: true
+    }
+  },
+  data () {
+    return {
+      menuDrawer: false,
+      accountDrawer: false
+    }
+  }
 }
 </script>
+<style>
+.clipped-drawer {
+	    margin-top: 64px;
+}
+
+</style>
 
 
